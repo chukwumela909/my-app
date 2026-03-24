@@ -7,6 +7,13 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { schoolInfo } from "@/lib/mock-data";
+import {
+  LayoutDashboard,
+  GraduationCap,
+  School,
+  BookOpen,
+  ClipboardList,
+} from "lucide-react";
 
 interface AdminSession {
   id: string;
@@ -15,11 +22,11 @@ interface AdminSession {
 }
 
 const navItems = [
-  { label: "Dashboard", href: "/admin/dashboard", icon: "📊" },
-  { label: "Students", href: "/admin/students", icon: "👩‍🎓" },
-  { label: "Classes", href: "/admin/classes", icon: "🏫" },
-  { label: "Subjects", href: "/admin/subjects", icon: "📚" },
-  { label: "Results", href: "/admin/results", icon: "📝" },
+  { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
+  { label: "Students", href: "/admin/students", icon: GraduationCap },
+  { label: "Classes", href: "/admin/classes", icon: School },
+  { label: "Subjects", href: "/admin/subjects", icon: BookOpen },
+  { label: "Results", href: "/admin/results", icon: ClipboardList },
 ];
 
 export default function AdminLayout({
@@ -116,7 +123,7 @@ export default function AdminLayout({
                     : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-zinc-800"
                 )}
               >
-                <span className="text-lg">{item.icon}</span>
+                <item.icon className="h-5 w-5 shrink-0" />
                 {item.label}
               </Link>
             );

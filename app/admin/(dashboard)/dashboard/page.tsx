@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { GraduationCap, School, BookOpen, ClipboardList } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 interface DashboardStats {
   students: number;
@@ -31,11 +33,11 @@ export default function AdminDashboardPage() {
     fetchStats();
   }, []);
 
-  const cards = [
-    { label: "Total Students", value: stats?.students ?? 0, icon: "👩‍🎓", color: "bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300" },
-    { label: "Classes", value: stats?.classes ?? 0, icon: "🏫", color: "bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-300" },
-    { label: "Subjects", value: stats?.subjects ?? 0, icon: "📚", color: "bg-purple-50 dark:bg-purple-950/30 text-purple-700 dark:text-purple-300" },
-    { label: "Results Uploaded", value: stats?.results ?? 0, icon: "📝", color: "bg-orange-50 dark:bg-orange-950/30 text-orange-700 dark:text-orange-300" },
+  const cards: { label: string; value: number; icon: LucideIcon; color: string; iconBg: string }[] = [
+    { label: "Total Students", value: stats?.students ?? 0, icon: GraduationCap, color: "text-blue-600 dark:text-blue-400", iconBg: "bg-blue-100 dark:bg-blue-950/50" },
+    { label: "Classes", value: stats?.classes ?? 0, icon: School, color: "text-green-600 dark:text-green-400", iconBg: "bg-green-100 dark:bg-green-950/50" },
+    { label: "Subjects", value: stats?.subjects ?? 0, icon: BookOpen, color: "text-purple-600 dark:text-purple-400", iconBg: "bg-purple-100 dark:bg-purple-950/50" },
+    { label: "Results Uploaded", value: stats?.results ?? 0, icon: ClipboardList, color: "text-orange-600 dark:text-orange-400", iconBg: "bg-orange-100 dark:bg-orange-950/50" },
   ];
 
   return (
@@ -54,7 +56,9 @@ export default function AdminDashboardPage() {
               <CardTitle className="text-sm font-medium text-slate-500 dark:text-slate-400">
                 {card.label}
               </CardTitle>
-              <span className="text-2xl">{card.icon}</span>
+              <div className={`${card.iconBg} ${card.color} p-3 rounded-xl`}>
+                <card.icon className="h-6 w-6" />
+              </div>
             </CardHeader>
             <CardContent>
               {loading ? (
