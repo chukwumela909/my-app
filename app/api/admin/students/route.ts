@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin-auth";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 interface StudentRow {
   id: string;
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const url = new URL(request.url);
   const classId = url.searchParams.get("classId");
 
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("students")
     .insert({
@@ -113,7 +113,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: "Student id is required" }, { status: 400 });
   }
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const updates: Record<string, unknown> = {};
   if (body.admission_number) updates.admission_number = body.admission_number;
   if (body.first_name) updates.first_name = body.first_name;
@@ -147,7 +147,7 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Student id is required" }, { status: 400 });
   }
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { error } = await supabase.from("students").delete().eq("id", id);
 
   if (error) {

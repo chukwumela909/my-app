@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin-auth";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function GET() {
   const session = await getAdminSession();
@@ -8,7 +8,7 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("classes")
     .select("*")
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "name and level are required" }, { status: 400 });
   }
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("classes")
     .insert({ name: body.name, level: body.level })
@@ -69,7 +69,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: "Class id is required" }, { status: 400 });
   }
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const updates: Record<string, string> = {};
   if (body.name) updates.name = body.name;
   if (body.level) updates.level = body.level;
@@ -100,7 +100,7 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Class id is required" }, { status: 400 });
   }
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { error } = await supabase.from("classes").delete().eq("id", id);
 
   if (error) {

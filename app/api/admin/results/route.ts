@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin-auth";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 interface ResultWithRelations {
   id: string;
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const url = new URL(request.url);
   const studentId = url.searchParams.get("studentId");
   const sessionFilter = url.searchParams.get("session");
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
   const total = ca_score + exam_score;
   const grade = computeGrade(total);
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("results")
     .insert({
@@ -137,7 +137,7 @@ export async function PUT(request: NextRequest) {
 
   if (body.ca_score != null || body.exam_score != null) {
     // Need to recompute total/grade — fetch current values first
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const { data: current } = await supabase
       .from("results")
       .select("ca_score, exam_score")
@@ -180,7 +180,7 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Result id is required" }, { status: 400 });
   }
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { error } = await supabase.from("results").delete().eq("id", id);
 
   if (error) {

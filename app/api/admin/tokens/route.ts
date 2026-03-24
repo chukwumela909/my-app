@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin-auth";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 async function hashPin(pin: string): Promise<string> {
   const encoder = new TextEncoder();
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const url = new URL(request.url);
   const studentId = url.searchParams.get("studentId");
 
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
   const plainPin = generatePin();
   const pinHash = await hashPin(plainPin);
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("access_tokens")
     .insert({
@@ -110,7 +110,7 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Token id is required" }, { status: 400 });
   }
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { error } = await supabase.from("access_tokens").delete().eq("id", id);
 
   if (error) {

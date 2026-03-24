@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Session expired — please check your result again" }, { status: 401 });
   }
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   // Fetch student with class info
   const { data: studentData, error: studentError } = await supabase
