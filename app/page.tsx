@@ -144,9 +144,9 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center text-slate-500 text-sm">
           <p>&copy; {new Date().getFullYear()} {schoolInfo.name}. All rights reserved.</p>
           <div className="flex gap-4 mt-4 md:mt-0">
-            <Link href="#" className="hover:text-blue-600">Privacy Policy</Link>
-            <Link href="#" className="hover:text-blue-600">Terms of Service</Link>
-            <Link href="#" className="hover:text-blue-600">Support</Link>
+            <Link href="/check-result" className="hover:text-blue-600">Check Result</Link>
+            <Link href="/admin/login" className="hover:text-blue-600">Admin Portal</Link>
+            <a href={`mailto:${schoolInfo.contact.email}`} className="hover:text-blue-600">Support</a>
           </div>
         </div>
       </footer>

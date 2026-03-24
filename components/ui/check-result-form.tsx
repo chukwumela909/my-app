@@ -35,7 +35,7 @@ export default function CheckResultFormDemo() {
         return;
       }
 
-      router.push(`/result?studentId=${encodeURIComponent(data.studentId)}`);
+      router.push(`/result?studentId=${encodeURIComponent(data.studentId)}&token=${encodeURIComponent(data.resultToken)}`);
     } catch {
       setError("Something went wrong. Please try again.");
       setIsLoading(false);

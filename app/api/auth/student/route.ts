@@ -1,5 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
+import { SignJWT } from "jose";
+
+const RESULT_SECRET = new TextEncoder().encode(
+  process.env.ADMIN_JWT_SECRET || "fallback-secret-change-in-production"
+);
 
 async function hashPin(pin: string): Promise<string> {
   const encoder = new TextEncoder();
@@ -92,9 +97,17 @@ export async function POST(request: NextRequest) {
     .update({ used_count: token.used_count + 1 } as never)
     .eq("id", token.id);
 
+  // Create a short-lived token so only authenticated students can view results
+  const resultToken = await new SignJWT({ studentId: student.id })
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setExpirationTime("1h")
+    .sign(RESULT_SECRET);
+
   return NextResponse.json({
     success: true,
     studentId: student.id,
+    resultToken,
     student: {
       firstName: student.first_name,
       lastName: student.last_name,

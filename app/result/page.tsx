@@ -133,6 +133,7 @@ interface ResultSummary {
 function ResultContent() {
   const searchParams = useSearchParams();
   const studentId = searchParams.get("studentId");
+  const resultToken = searchParams.get("token");
 
   const [student, setStudent] = useState<StudentProfile | null>(null);
   const [results, setResults] = useState<ResultRecord[]>([]);
@@ -141,15 +142,15 @@ function ResultContent() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!studentId) {
-      setError("No student ID provided. Please go back and check your result.");
+    if (!studentId || !resultToken) {
+      setError("No student ID or session token provided. Please go back and check your result.");
       setLoading(false);
       return;
     }
 
     async function fetchResult() {
       try {
-        const res = await fetch(`/api/result?studentId=${encodeURIComponent(studentId!)}`);
+        const res = await fetch(`/api/result?studentId=${encodeURIComponent(studentId!)}&token=${encodeURIComponent(resultToken!)}`);
         const data = await res.json();
 
         if (!res.ok) {
@@ -169,7 +170,7 @@ function ResultContent() {
     }
 
     fetchResult();
-  }, [studentId]);
+  }, [studentId, resultToken]);
 
   const handlePrint = () => {
     window.print();
@@ -215,7 +216,7 @@ function ResultContent() {
           </Link>
           <div className="flex items-center gap-3">
             <div className="bg-white rounded-full p-0.5 shadow-sm h-10 w-10 relative flex items-center justify-center overflow-hidden border border-slate-200">
-               <Image src="/logo.png" alt="School Logo" fill sizes="40px" className="object-contain p-1" />
+               <Image src="/goodnews-logo.png" alt="School Logo" fill sizes="40px" className="object-contain p-1" />
             </div>
             <span className="font-bold text-lg text-slate-800 dark:text-slate-100 hidden sm:inline">{schoolInfo.name}</span>
           </div>
@@ -224,7 +225,7 @@ function ResultContent() {
               <IconPrinter className="h-4 w-4 mr-2" />
               Print
             </Button>
-            <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white">
+            <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white" onClick={handlePrint}>
               <IconDownload className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">Download</span>
             </Button>
@@ -251,7 +252,7 @@ function ResultContent() {
               <div className="relative z-10">
                 <div className="flex justify-center mb-4">
                   <div className="h-24 w-24 bg-white dark:bg-zinc-800 rounded-full flex items-center justify-center shadow-lg ring-4 ring-white/30 relative overflow-hidden">
-                    <Image src="/logo.png" alt="School Logo" fill sizes="96px" className="object-contain p-2" />
+                    <Image src="/goodnews-logo.png" alt="School Logo" fill sizes="96px" className="object-contain p-2" />
                   </div>
                 </div>
                 <h1 className="text-2xl sm:text-4xl font-extrabold uppercase tracking-wide mb-2">{schoolInfo.name}</h1>
@@ -474,7 +475,7 @@ function ResultContent() {
           {/* Footer Actions - Hidden on print */}
           <motion.div variants={itemVariants} className="mt-8 text-center print:hidden pb-8">
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              Having issues with your result? <Link href="#" className="text-blue-600 dark:text-blue-400 hover:underline font-medium">Contact Support</Link>
+              Having issues with your result? <a href={`mailto:${schoolInfo.contact.email}`} className="text-blue-600 dark:text-blue-400 hover:underline font-medium">Contact Support</a>
             </p>
             <p className="text-xs text-slate-400 dark:text-slate-600 mt-2">
                Generated on {new Date().toLocaleDateString()}

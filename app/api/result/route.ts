@@ -1,5 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
+import { jwtVerify } from "jose";
+
+const RESULT_SECRET = new TextEncoder().encode(
+  process.env.ADMIN_JWT_SECRET || "fallback-secret-change-in-production"
+);
 
 function gradeFromTotal(total: number): string {
   if (total >= 70) return "A";
@@ -50,6 +55,21 @@ export async function GET(request: NextRequest) {
 
   if (!studentId) {
     return NextResponse.json({ error: "Missing studentId" }, { status: 400 });
+  }
+
+  // Verify the result access token
+  const token = searchParams.get("token");
+  if (!token) {
+    return NextResponse.json({ error: "Unauthorized — please check your result from the login page" }, { status: 401 });
+  }
+
+  try {
+    const { payload } = await jwtVerify(token, RESULT_SECRET);
+    if (payload.studentId !== studentId) {
+      return NextResponse.json({ error: "Unauthorized — token mismatch" }, { status: 403 });
+    }
+  } catch {
+    return NextResponse.json({ error: "Session expired — please check your result again" }, { status: 401 });
   }
 
   const supabase = await createClient();
