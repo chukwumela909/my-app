@@ -46,6 +46,7 @@ export default function StudentsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [generatedPin, setGeneratedPin] = useState<GeneratedPin | null>(null);
+  const [error, setError] = useState("");
 
   const [form, setForm] = useState({
     admission_number: "",
@@ -55,10 +56,18 @@ export default function StudentsPage() {
   });
 
   const fetchStudents = useCallback(async () => {
-    const res = await fetch("/api/admin/students");
-    if (res.ok) {
-      const data = await res.json();
-      setStudents(data.students);
+    try {
+      const res = await fetch("/api/admin/students");
+      if (res.ok) {
+        const data = await res.json();
+        setStudents(data.students);
+        setError("");
+      } else {
+        const data = await res.json().catch(() => null);
+        setError(data?.error || `Failed to load students (${res.status})`);
+      }
+    } catch {
+      setError("Network error — could not reach server");
     }
     setLoading(false);
   }, []);
@@ -94,8 +103,12 @@ export default function StudentsPage() {
     });
 
     if (res.ok) {
+      setError("");
       resetForm();
       fetchStudents();
+    } else {
+      const data = await res.json().catch(() => null);
+      setError(data?.error || `Failed to save student (${res.status})`);
     }
   };
 
@@ -113,7 +126,13 @@ export default function StudentsPage() {
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this student?")) return;
     const res = await fetch(`/api/admin/students?id=${id}`, { method: "DELETE" });
-    if (res.ok) fetchStudents();
+    if (res.ok) {
+      setError("");
+      fetchStudents();
+    } else {
+      const data = await res.json().catch(() => null);
+      setError(data?.error || `Failed to delete student (${res.status})`);
+    }
   };
 
   const handleGeneratePin = async (student: Student) => {
@@ -124,11 +143,15 @@ export default function StudentsPage() {
     });
     if (res.ok) {
       const data = await res.json();
+      setError("");
       setGeneratedPin({
         studentName: `${student.first_name} ${student.last_name}`,
         admissionNumber: student.admission_number,
         pin: data.plain_pin,
       });
+    } else {
+      const data = await res.json().catch(() => null);
+      setError(data?.error || `Failed to generate PIN (${res.status})`);
     }
   };
 
@@ -152,6 +175,12 @@ export default function StudentsPage() {
           + Add Student
         </Button>
       </div>
+
+      {error && (
+        <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg text-sm">
+          {error}
+        </div>
+      )}
 
       {/* PIN display modal */}
       {generatedPin && (

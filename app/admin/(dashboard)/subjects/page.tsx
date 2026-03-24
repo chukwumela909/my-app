@@ -28,12 +28,21 @@ export default function SubjectsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", code: "" });
+  const [error, setError] = useState("");
 
   const fetchSubjects = useCallback(async () => {
-    const res = await fetch("/api/admin/subjects");
-    if (res.ok) {
-      const data = await res.json();
-      setSubjects(data.subjects);
+    try {
+      const res = await fetch("/api/admin/subjects");
+      if (res.ok) {
+        const data = await res.json();
+        setSubjects(data.subjects);
+        setError("");
+      } else {
+        const data = await res.json().catch(() => null);
+        setError(data?.error || `Failed to load subjects (${res.status})`);
+      }
+    } catch {
+      setError("Network error — could not reach server");
     }
     setLoading(false);
   }, []);
@@ -60,8 +69,12 @@ export default function SubjectsPage() {
     });
 
     if (res.ok) {
+      setError("");
       resetForm();
       fetchSubjects();
+    } else {
+      const data = await res.json().catch(() => null);
+      setError(data?.error || `Failed to save subject (${res.status})`);
     }
   };
 
@@ -74,7 +87,13 @@ export default function SubjectsPage() {
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this subject? Existing results for this subject will be affected.")) return;
     const res = await fetch(`/api/admin/subjects?id=${id}`, { method: "DELETE" });
-    if (res.ok) fetchSubjects();
+    if (res.ok) {
+      setError("");
+      fetchSubjects();
+    } else {
+      const data = await res.json().catch(() => null);
+      setError(data?.error || `Failed to delete subject (${res.status})`);
+    }
   };
 
   return (
@@ -90,6 +109,12 @@ export default function SubjectsPage() {
           + Add Subject
         </Button>
       </div>
+
+      {error && (
+        <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg text-sm">
+          {error}
+        </div>
+      )}
 
       {showForm && (
         <Card className="border-slate-200 dark:border-zinc-800">

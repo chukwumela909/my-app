@@ -60,6 +60,7 @@ export default function ResultsPage() {
   const [subjects, setSubjects] = useState<SubjectOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [error, setError] = useState("");
 
   const [form, setForm] = useState({
     student_id: "",
@@ -71,10 +72,18 @@ export default function ResultsPage() {
   });
 
   const fetchResults = useCallback(async () => {
-    const res = await fetch("/api/admin/results");
-    if (res.ok) {
-      const data = await res.json();
-      setResults(data.results);
+    try {
+      const res = await fetch("/api/admin/results");
+      if (res.ok) {
+        const data = await res.json();
+        setResults(data.results);
+        setError("");
+      } else {
+        const data = await res.json().catch(() => null);
+        setError(data?.error || `Failed to load results (${res.status})`);
+      }
+    } catch {
+      setError("Network error — could not reach server");
     }
     setLoading(false);
   }, []);
@@ -134,15 +143,25 @@ export default function ResultsPage() {
     });
 
     if (res.ok) {
+      setError("");
       resetForm();
       fetchResults();
+    } else {
+      const data = await res.json().catch(() => null);
+      setError(data?.error || `Failed to save result (${res.status})`);
     }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this result entry?")) return;
     const res = await fetch(`/api/admin/results?id=${id}`, { method: "DELETE" });
-    if (res.ok) fetchResults();
+    if (res.ok) {
+      setError("");
+      fetchResults();
+    } else {
+      const data = await res.json().catch(() => null);
+      setError(data?.error || `Failed to delete result (${res.status})`);
+    }
   };
 
   const terms = ["First Term", "Second Term", "Third Term"];
@@ -160,6 +179,12 @@ export default function ResultsPage() {
           + Add Result
         </Button>
       </div>
+
+      {error && (
+        <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg text-sm">
+          {error}
+        </div>
+      )}
 
       {showForm && (
         <Card className="border-slate-200 dark:border-zinc-800">
