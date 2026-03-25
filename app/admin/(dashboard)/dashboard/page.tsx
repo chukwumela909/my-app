@@ -36,7 +36,7 @@ export default function AdminDashboardPage() {
   const cards: { label: string; value: number; icon: LucideIcon; color: string; iconBg: string }[] = [
     { label: "Total Students", value: stats?.students ?? 0, icon: GraduationCap, color: "text-blue-600 dark:text-blue-400", iconBg: "bg-blue-100 dark:bg-blue-950/50" },
     { label: "Classes", value: stats?.classes ?? 0, icon: School, color: "text-green-600 dark:text-green-400", iconBg: "bg-green-100 dark:bg-green-950/50" },
-    { label: "Subjects", value: stats?.subjects ?? 0, icon: BookOpen, color: "text-purple-600 dark:text-purple-400", iconBg: "bg-purple-100 dark:bg-purple-950/50" },
+    { label: "Subjects", value: stats?.subjects ?? 0, icon: BookOpen, color: "text-teal-600 dark:text-teal-400", iconBg: "bg-teal-100 dark:bg-teal-950/50" },
     { label: "Results Uploaded", value: stats?.results ?? 0, icon: ClipboardList, color: "text-orange-600 dark:text-orange-400", iconBg: "bg-orange-100 dark:bg-orange-950/50" },
   ];
 

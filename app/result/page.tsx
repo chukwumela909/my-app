@@ -244,7 +244,7 @@ function ResultContent() {
             {/* School Header Banner */}
             <motion.div 
               variants={itemVariants}
-              className="bg-gradient-to-r from-blue-600 to-indigo-700 dark:from-blue-900 dark:to-indigo-900 text-white p-8 sm:p-10 text-center relative overflow-hidden"
+              className="bg-gradient-to-r from-blue-600 to-blue-800 dark:from-blue-900 dark:to-slate-900 text-white p-8 sm:p-10 text-center relative overflow-hidden"
             >
               {/* Decorative background elements */}
               <div className="absolute top-0 left-0 w-full h-full opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] animate-pulse-slow"></div>
@@ -386,10 +386,10 @@ function ResultContent() {
               <div className="grid md:grid-cols-2 gap-6 px-4 sm:px-0">
                 {/* Performance Stats */}
                 <motion.div variants={itemVariants}>
-                  <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-600 to-indigo-600 text-white overflow-hidden relative">
+                  <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-600 to-blue-700 text-white overflow-hidden relative">
                     {/* Abstract bg shapes */}
                     <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full bg-white/10 blur-3xl"></div>
-                    <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-48 h-48 rounded-full bg-indigo-500/30 blur-2xl"></div>
+                    <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-48 h-48 rounded-full bg-blue-400/20 blur-2xl"></div>
                     
                     <CardHeader className="pb-2 relative z-10">
                       <CardTitle className="text-lg flex items-center gap-2 text-white/90">
