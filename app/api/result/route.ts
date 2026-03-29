@@ -28,6 +28,7 @@ interface StudentWithClass {
   id: string;
   admission_number: string;
   first_name: string;
+  middle_name: string | null;
   last_name: string;
   photo_url: string | null;
   current_class_id: string;
@@ -129,6 +130,7 @@ export async function GET(request: NextRequest) {
     student: {
       id: student.id,
       firstName: student.first_name,
+      middleName: student.middle_name,
       lastName: student.last_name,
       admissionNumber: student.admission_number,
       class: className,

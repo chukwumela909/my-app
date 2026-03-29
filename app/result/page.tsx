@@ -118,6 +118,7 @@ function ResultLoading() {
 interface StudentProfile {
   id: string;
   firstName: string;
+  middleName: string | null;
   lastName: string;
   admissionNumber: string;
   class: string;
@@ -281,7 +282,7 @@ function ResultContent() {
                 
                 <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 text-sm">
                    {[
-                     { label: "Full Name", value: `${student.firstName} ${student.lastName}`, icon: <IconUser className="h-4 w-4" /> },
+                     { label: "Full Name", value: `${student.firstName}${student.middleName ? ` ${student.middleName}` : ''} ${student.lastName}`, icon: <IconUser className="h-4 w-4" /> },
                      { label: "Admission No", value: student.admissionNumber, icon: <IconHash className="h-4 w-4" /> },
                      { label: "Class", value: student.class, icon: <IconBookOpen className="h-4 w-4" /> },
                      { label: "Session", value: schoolInfo.currentSession, icon: <IconCalendar className="h-4 w-4" /> },

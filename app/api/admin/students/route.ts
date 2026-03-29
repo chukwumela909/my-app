@@ -2,10 +2,30 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/admin-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+async function hashPin(pin: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(pin);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function generatePin(): string {
+  const chars = "0123456789";
+  let pin = "";
+  const array = new Uint32Array(6);
+  crypto.getRandomValues(array);
+  for (let i = 0; i < 6; i++) {
+    pin += chars[array[i] % chars.length];
+  }
+  return pin;
+}
+
 interface StudentRow {
   id: string;
   admission_number: string;
   first_name: string;
+  middle_name: string | null;
   last_name: string;
   current_class_id: string;
   photo_url: string | null;
@@ -22,6 +42,19 @@ export async function GET(request: NextRequest) {
   const supabase = createAdminClient();
   const url = new URL(request.url);
   const classId = url.searchParams.get("classId");
+  const lastAdmission = url.searchParams.get("lastAdmission");
+
+  // Return only the latest admission number for auto-suggest
+  if (lastAdmission !== null) {
+    const { data } = await supabase
+      .from("students")
+      .select("admission_number")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+
+    return NextResponse.json({ lastAdmissionNumber: data?.admission_number ?? null });
+  }
 
   let query = supabase
     .from("students")
@@ -51,6 +84,7 @@ export async function POST(request: NextRequest) {
   let body: {
     admission_number?: string;
     first_name?: string;
+    middle_name?: string | null;
     last_name?: string;
     current_class_id?: string;
     photo_url?: string | null;
@@ -75,6 +109,7 @@ export async function POST(request: NextRequest) {
     .insert({
       admission_number,
       first_name,
+      middle_name: body.middle_name ?? null,
       last_name,
       current_class_id,
       photo_url: body.photo_url ?? null,
@@ -86,7 +121,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ student: data }, { status: 201 });
+  // Auto-generate access PIN for the new student
+  const plainPin = generatePin();
+  const pinHash = await hashPin(plainPin);
+
+  await supabase
+    .from("access_tokens")
+    .insert({
+      student_id: data.id,
+      pin_hash: pinHash,
+      usage_limit: 5,
+      used_count: 0,
+    });
+
+  return NextResponse.json({ student: data, plain_pin: plainPin }, { status: 201 });
 }
 
 export async function PUT(request: NextRequest) {
@@ -99,6 +147,7 @@ export async function PUT(request: NextRequest) {
     id?: string;
     admission_number?: string;
     first_name?: string;
+    middle_name?: string | null;
     last_name?: string;
     current_class_id?: string;
     photo_url?: string | null;
@@ -117,6 +166,7 @@ export async function PUT(request: NextRequest) {
   const updates: Record<string, unknown> = {};
   if (body.admission_number) updates.admission_number = body.admission_number;
   if (body.first_name) updates.first_name = body.first_name;
+  if (body.middle_name !== undefined) updates.middle_name = body.middle_name;
   if (body.last_name) updates.last_name = body.last_name;
   if (body.current_class_id) updates.current_class_id = body.current_class_id;
   if (body.photo_url !== undefined) updates.photo_url = body.photo_url;

@@ -38,6 +38,7 @@ export interface Database {
           id: string;
           admission_number: string;
           first_name: string;
+          middle_name: string | null;
           last_name: string;
           current_class_id: string;
           photo_url: string | null;
@@ -47,6 +48,7 @@ export interface Database {
           id?: string;
           admission_number: string;
           first_name: string;
+          middle_name?: string | null;
           last_name: string;
           current_class_id: string;
           photo_url?: string | null;
@@ -56,6 +58,7 @@ export interface Database {
           id?: string;
           admission_number?: string;
           first_name?: string;
+          middle_name?: string | null;
           last_name?: string;
           current_class_id?: string;
           photo_url?: string | null;
