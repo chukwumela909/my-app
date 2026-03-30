@@ -175,6 +175,7 @@ export interface Database {
           id: string;
           student_id: string;
           pin_hash: string;
+          pin: string;
           usage_limit: number;
           used_count: number;
           created_at: string;
@@ -183,6 +184,7 @@ export interface Database {
           id?: string;
           student_id: string;
           pin_hash: string;
+          pin: string;
           usage_limit?: number;
           used_count?: number;
           created_at?: string;
@@ -191,6 +193,7 @@ export interface Database {
           id?: string;
           student_id?: string;
           pin_hash?: string;
+          pin?: string;
           usage_limit?: number;
           used_count?: number;
           created_at?: string;

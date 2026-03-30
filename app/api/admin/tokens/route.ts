@@ -84,6 +84,7 @@ export async function POST(request: NextRequest) {
     .insert({
       student_id: body.student_id,
       pin_hash: pinHash,
+      pin: plainPin,
       usage_limit: body.usage_limit ?? 5,
       used_count: 0,
     })

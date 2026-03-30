@@ -53,6 +53,7 @@ export default function StudentsPage() {
   const [generatedPin, setGeneratedPin] = useState<GeneratedPin | null>(null);
   const [error, setError] = useState("");
   const [suggestedNumber, setSuggestedNumber] = useState("001");
+  const [classFilter, setClassFilter] = useState("");
   const printRef = useRef<HTMLDivElement>(null);
 
   const [form, setForm] = useState({
@@ -142,16 +143,10 @@ export default function StudentsPage() {
           admissionNumber: form.admission_number,
           pin: data.plain_pin,
         });
-
-        // Store the pin locally for the print list
-        setStudents((prev) => [
-          ...prev,
-          { ...data.student, classes: classes.find((c) => c.id === form.current_class_id) || null, pin: data.plain_pin },
-        ]);
       }
 
       resetForm();
-      if (editingId) fetchStudents();
+      fetchStudents();
     } else {
       const data = await res.json().catch(() => null);
       setError(data?.error || `Failed to save student (${res.status})`);
@@ -196,10 +191,8 @@ export default function StudentsPage() {
         admissionNumber: student.admission_number,
         pin: data.plain_pin,
       });
-      // Store pin locally for print list
-      setStudents((prev) =>
-        prev.map((s) => (s.id === student.id ? { ...s, pin: data.plain_pin } : s))
-      );
+      // Refresh list to get updated pin from DB
+      fetchStudents();
     } else {
       const data = await res.json().catch(() => null);
       setError(data?.error || `Failed to generate PIN (${res.status})`);
@@ -208,10 +201,11 @@ export default function StudentsPage() {
 
   const filtered = students.filter(
     (s) =>
-      s.first_name.toLowerCase().includes(search.toLowerCase()) ||
+      (classFilter === "" || s.current_class_id === classFilter) &&
+      (s.first_name.toLowerCase().includes(search.toLowerCase()) ||
       s.last_name.toLowerCase().includes(search.toLowerCase()) ||
       (s.middle_name || "").toLowerCase().includes(search.toLowerCase()) ||
-      s.admission_number.toLowerCase().includes(search.toLowerCase())
+      s.admission_number.toLowerCase().includes(search.toLowerCase()))
   );
 
   const handlePrintList = () => {
@@ -406,12 +400,26 @@ export default function StudentsPage() {
 
       {/* Search & Export */}
       <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-        <Input
-          placeholder="Search by name or admission number..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="max-w-sm"
-        />
+        <div className="flex gap-3 flex-1">
+          <Input
+            placeholder="Search by name or admission number..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="max-w-sm"
+          />
+          <select
+            value={classFilter}
+            onChange={(e) => setClassFilter(e.target.value)}
+            className="h-9 rounded-md border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 text-sm"
+          >
+            <option value="">All Classes</option>
+            {classes.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name} ({c.level})
+              </option>
+            ))}
+          </select>
+        </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={handlePrintList}>
             Print List
@@ -438,6 +446,7 @@ export default function StudentsPage() {
                   <TableHead>Admission #</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Class</TableHead>
+                  <TableHead>PIN</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -454,6 +463,9 @@ export default function StudentsPage() {
                       <Badge variant="secondary">
                         {student.classes?.name ?? "—"}
                       </Badge>
+                    </TableCell>
+                    <TableCell className="font-mono text-sm">
+                      {student.pin ?? "—"}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">

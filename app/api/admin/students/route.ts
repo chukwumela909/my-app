@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
 
   let query = supabase
     .from("students")
-    .select("*, classes(id, name, level)")
+    .select("*, classes(id, name, level), access_tokens(pin)")
     .order("first_name");
 
   if (classId) {
@@ -71,7 +71,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const students = (data as unknown as StudentRow[]) ?? [];
+  const students = (data ?? []).map((s: Record<string, unknown>) => {
+    const tokens = s.access_tokens as { pin: string }[] | null;
+    const latestPin = tokens && tokens.length > 0 ? tokens[tokens.length - 1].pin : null;
+    const { access_tokens: _, ...rest } = s;
+    return { ...rest, pin: latestPin };
+  });
   return NextResponse.json({ students });
 }
 
@@ -130,6 +135,7 @@ export async function POST(request: NextRequest) {
     .insert({
       student_id: data.id,
       pin_hash: pinHash,
+      pin: plainPin,
       usage_limit: 5,
       used_count: 0,
     });
