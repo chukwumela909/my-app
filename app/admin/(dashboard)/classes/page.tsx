@@ -95,7 +95,7 @@ export default function ClassesPage() {
     }
   };
 
-  const levels = ["Creche", "Pre-Nursery", "Nursery", "JSS 1", "JSS 2", "JSS 3", "SSS 1", "SSS 2", "SSS 3"];
+  const levels = ["Creche", "Pre-Nursery", "Nursery", "Transition Class", "Basic 1", "Basic 2", "Basic 3", "Basic 4", "Basic 5", "Basic 6", "JSS 1", "JSS 2", "JSS 3", "SSS 1", "SSS 2", "SSS 3"];
 
   return (
     <div className="space-y-6">

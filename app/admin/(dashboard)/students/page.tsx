@@ -472,13 +472,6 @@ export default function StudentsPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleGeneratePin(student)}
-                        >
-                          Generate PIN
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
                           onClick={() => handleEdit(student)}
                         >
                           Edit
