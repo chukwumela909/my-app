@@ -123,10 +123,13 @@ export interface Database {
           subject_id: string;
           session: string;
           term: string;
-          ca_score: number;
+          first_ass: number;
+          second_ass: number;
           exam_score: number;
           total: number;
           grade: string;
+          class_average: string | null;
+          teacher_remark: string | null;
           created_at: string;
         };
         Insert: {
@@ -135,10 +138,13 @@ export interface Database {
           subject_id: string;
           session: string;
           term: string;
-          ca_score: number;
+          first_ass: number;
+          second_ass: number;
           exam_score: number;
           total: number;
           grade: string;
+          class_average?: string | null;
+          teacher_remark?: string | null;
           created_at?: string;
         };
         Update: {
@@ -147,10 +153,13 @@ export interface Database {
           subject_id?: string;
           session?: string;
           term?: string;
-          ca_score?: number;
+          first_ass?: number;
+          second_ass?: number;
           exam_score?: number;
           total?: number;
           grade?: string;
+          class_average?: string | null;
+          teacher_remark?: string | null;
           created_at?: string;
         };
         Relationships: [
@@ -166,6 +175,65 @@ export interface Database {
             columns: ["subject_id"];
             isOneToOne: false;
             referencedRelation: "subjects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      term_metadata: {
+        Row: {
+          id: string;
+          student_id: string;
+          session: string;
+          term: string;
+          school_days_opened: string | null;
+          attendance: string | null;
+          next_term_begins: string | null;
+          overall_remark: string | null;
+          teacher_comment: string | null;
+          principal_comment: string | null;
+          total_score: string | null;
+          average_score: string | null;
+          overall_grade: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          student_id: string;
+          session: string;
+          term: string;
+          school_days_opened?: string | null;
+          attendance?: string | null;
+          next_term_begins?: string | null;
+          overall_remark?: string | null;
+          teacher_comment?: string | null;
+          principal_comment?: string | null;
+          total_score?: string | null;
+          average_score?: string | null;
+          overall_grade?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          student_id?: string;
+          session?: string;
+          term?: string;
+          school_days_opened?: string | null;
+          attendance?: string | null;
+          next_term_begins?: string | null;
+          overall_remark?: string | null;
+          teacher_comment?: string | null;
+          principal_comment?: string | null;
+          total_score?: string | null;
+          average_score?: string | null;
+          overall_grade?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "term_metadata_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "students";
             referencedColumns: ["id"];
           },
         ];

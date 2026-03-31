@@ -8,10 +8,13 @@ interface ResultWithRelations {
   subject_id: string;
   session: string;
   term: string;
-  ca_score: number;
+  first_ass: number;
+  second_ass: number;
   exam_score: number;
   total: number;
   grade: string;
+  class_average: string | null;
+  teacher_remark: string | null;
   created_at: string;
   students: { id: string; first_name: string; last_name: string; admission_number: string } | null;
   subjects: { id: string; name: string; code: string } | null;
@@ -67,8 +70,11 @@ export async function POST(request: NextRequest) {
     subject_id?: string;
     session?: string;
     term?: string;
-    ca_score?: number;
+    first_ass?: number;
+    second_ass?: number;
     exam_score?: number;
+    class_average?: string;
+    teacher_remark?: string;
   };
   try {
     body = await request.json();
@@ -76,15 +82,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  const { student_id, subject_id, session: sessionVal, term, ca_score, exam_score } = body;
-  if (!student_id || !subject_id || !sessionVal || !term || ca_score == null || exam_score == null) {
+  const { student_id, subject_id, session: sessionVal, term, first_ass, second_ass, exam_score, class_average, teacher_remark } = body;
+  if (!student_id || !subject_id || !sessionVal || !term || first_ass == null || second_ass == null || exam_score == null) {
     return NextResponse.json(
-      { error: "student_id, subject_id, session, term, ca_score, and exam_score are required" },
+      { error: "student_id, subject_id, session, term, first_ass, second_ass, and exam_score are required" },
       { status: 400 }
     );
   }
 
-  const total = ca_score + exam_score;
+  const total = first_ass + second_ass + exam_score;
   const grade = computeGrade(total);
 
   const supabase = createAdminClient();
@@ -95,10 +101,13 @@ export async function POST(request: NextRequest) {
       subject_id,
       session: sessionVal,
       term,
-      ca_score,
+      first_ass,
+      second_ass,
       exam_score,
       total,
       grade,
+      class_average: class_average || null,
+      teacher_remark: teacher_remark || null,
     })
     .select()
     .single();
@@ -118,8 +127,11 @@ export async function PUT(request: NextRequest) {
 
   let body: {
     id?: string;
-    ca_score?: number;
+    first_ass?: number;
+    second_ass?: number;
     exam_score?: number;
+    class_average?: string;
+    teacher_remark?: string;
   };
   try {
     body = await request.json();
@@ -131,41 +143,45 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: "Result id is required" }, { status: 400 });
   }
 
-  const updates: Record<string, unknown> = {};
-  if (body.ca_score != null) updates.ca_score = body.ca_score;
-  if (body.exam_score != null) updates.exam_score = body.exam_score;
+  const supabase = createAdminClient();
 
-  if (body.ca_score != null || body.exam_score != null) {
-    // Need to recompute total/grade — fetch current values first
-    const supabase = createAdminClient();
-    const { data: current } = await supabase
-      .from("results")
-      .select("ca_score, exam_score")
-      .eq("id", body.id)
-      .single();
+  // Fetch current values for recomputation
+  const { data: current } = await supabase
+    .from("results")
+    .select("first_ass, second_ass, exam_score")
+    .eq("id", body.id)
+    .single();
 
-    const row = current as { ca_score: number; exam_score: number } | null;
-    const ca = body.ca_score ?? row?.ca_score ?? 0;
-    const exam = body.exam_score ?? row?.exam_score ?? 0;
-    const total = ca + exam;
-    updates.total = total;
-    updates.grade = computeGrade(total);
+  const row = current as { first_ass: number; second_ass: number; exam_score: number } | null;
+  const fa = body.first_ass ?? row?.first_ass ?? 0;
+  const sa = body.second_ass ?? row?.second_ass ?? 0;
+  const exam = body.exam_score ?? row?.exam_score ?? 0;
+  const total = fa + sa + exam;
+  const grade = computeGrade(total);
 
-    const { data, error } = await supabase
-      .from("results")
-      .update(updates)
-      .eq("id", body.id)
-      .select()
-      .single();
+  const updates: Record<string, unknown> = {
+    first_ass: fa,
+    second_ass: sa,
+    exam_score: exam,
+    total,
+    grade,
+  };
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+  if (body.class_average !== undefined) updates.class_average = body.class_average || null;
+  if (body.teacher_remark !== undefined) updates.teacher_remark = body.teacher_remark || null;
 
-    return NextResponse.json({ result: data });
+  const { data, error } = await supabase
+    .from("results")
+    .update(updates)
+    .eq("id", body.id)
+    .select()
+    .single();
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ error: "No fields to update" }, { status: 400 });
+  return NextResponse.json({ result: data });
 }
 
 export async function DELETE(request: NextRequest) {

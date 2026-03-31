@@ -6,24 +6,6 @@ const RESULT_SECRET = new TextEncoder().encode(
   process.env.ADMIN_JWT_SECRET || "fallback-secret-change-in-production"
 );
 
-function gradeFromTotal(total: number): string {
-  if (total >= 70) return "A";
-  if (total >= 60) return "B";
-  if (total >= 50) return "C";
-  if (total >= 40) return "D";
-  return "F";
-}
-
-function remarkFromGrade(grade: string): string {
-  switch (grade) {
-    case "A": return "Excellent";
-    case "B": return "Very Good";
-    case "C": return "Good";
-    case "D": return "Pass";
-    default: return "Fail";
-  }
-}
-
 interface StudentWithClass {
   id: string;
   admission_number: string;
@@ -41,11 +23,30 @@ interface ResultWithSubject {
   subject_id: string;
   session: string;
   term: string;
-  ca_score: number;
+  first_ass: number;
+  second_ass: number;
   exam_score: number;
   total: number;
   grade: string;
+  class_average: string | null;
+  teacher_remark: string | null;
   subjects: { name: string; code: string } | null;
+}
+
+interface TermMetadata {
+  id: string;
+  student_id: string;
+  session: string;
+  term: string;
+  school_days_opened: string | null;
+  attendance: string | null;
+  next_term_begins: string | null;
+  overall_remark: string | null;
+  teacher_comment: string | null;
+  principal_comment: string | null;
+  total_score: string | null;
+  average_score: string | null;
+  overall_grade: string | null;
 }
 
 export async function GET(request: NextRequest) {
@@ -105,24 +106,31 @@ export async function GET(request: NextRequest) {
 
   const results = (resultsData || []) as unknown as ResultWithSubject[];
 
-  // Transform results into the format the frontend expects
-  const formattedResults = results.map((r) => {
-    const grade = gradeFromTotal(r.total);
-    return {
-      subject: r.subjects?.name || "Unknown",
-      ca: r.ca_score,
-      exam: r.exam_score,
-      total: r.total,
-      grade: r.grade || grade,
-      remark: remarkFromGrade(r.grade || grade),
-    };
-  });
+  // Fetch term metadata
+  let termMetadata: TermMetadata | null = null;
+  if (session && term) {
+    const { data: metaData } = await supabase
+      .from("term_metadata")
+      .select("*")
+      .eq("student_id", studentId)
+      .eq("session", session)
+      .eq("term", term)
+      .maybeSingle();
 
-  // Calculate summary
-  const totalScore = formattedResults.reduce((sum, r) => sum + r.total, 0);
-  const averageScore = formattedResults.length > 0
-    ? Math.round((totalScore / formattedResults.length) * 100) / 100
-    : 0;
+    termMetadata = metaData as unknown as TermMetadata | null;
+  }
+
+  // Transform results
+  const formattedResults = results.map((r) => ({
+    subject: r.subjects?.name || "Unknown",
+    firstAss: r.first_ass,
+    secondAss: r.second_ass,
+    exam: r.exam_score,
+    total: r.total,
+    grade: r.grade,
+    classAverage: r.class_average,
+    teacherRemark: r.teacher_remark,
+  }));
 
   const className = student.classes?.name || "Unknown";
 
@@ -137,10 +145,18 @@ export async function GET(request: NextRequest) {
       photoUrl: student.photo_url,
     },
     results: formattedResults,
-    summary: {
-      totalScore,
-      averageScore,
-      subjectCount: formattedResults.length,
-    },
+    termMetadata: termMetadata
+      ? {
+          schoolDaysOpened: termMetadata.school_days_opened,
+          attendance: termMetadata.attendance,
+          nextTermBegins: termMetadata.next_term_begins,
+          overallRemark: termMetadata.overall_remark,
+          teacherComment: termMetadata.teacher_comment,
+          principalComment: termMetadata.principal_comment,
+          totalScore: termMetadata.total_score,
+          averageScore: termMetadata.average_score,
+          overallGrade: termMetadata.overall_grade,
+        }
+      : null,
   });
 }

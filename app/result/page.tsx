@@ -16,23 +16,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { 
-  IconSchool, 
-  IconPrinter, 
-  IconDownload, 
-  IconArrowLeft, 
-  IconAward, 
-  IconTrendingUp, 
-  IconBookOpen, 
-  IconClock, 
-  IconCalendar, 
-  IconHash, 
-  IconUser 
+import {
+  IconPrinter,
+  IconDownload,
+  IconArrowLeft,
+  IconAward,
+  IconTrendingUp,
+  IconBookOpen,
+  IconClock,
+  IconCalendar,
+  IconHash,
+  IconUser,
 } from "@/components/ui/custom-icons";
 import { schoolInfo } from "@/lib/mock-data";
-import type { ResultRecord } from "@/lib/mock-data";
 import { motion } from "motion/react";
-import { cn } from "@/lib/utils";
 
 function getGradeColor(grade: string) {
   switch (grade) {
@@ -56,9 +53,7 @@ const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
+    transition: { staggerChildren: 0.1 },
   },
 };
 
@@ -78,7 +73,7 @@ const AnimatedNumber = ({ value }: { value: number }) => {
     let start = 0;
     const end = value;
     const duration = 1000;
-    const increment = end / (duration / 16); // 60fps
+    const increment = end / (duration / 16);
 
     const timer = setInterval(() => {
       start += increment;
@@ -95,6 +90,43 @@ const AnimatedNumber = ({ value }: { value: number }) => {
 
   return <span>{displayValue}</span>;
 };
+
+// --- Types ---
+
+interface StudentProfile {
+  id: string;
+  firstName: string;
+  middleName: string | null;
+  lastName: string;
+  admissionNumber: string;
+  class: string;
+  photoUrl: string | null;
+}
+
+interface ResultRecord {
+  subject: string;
+  firstAss: number;
+  secondAss: number;
+  exam: number;
+  total: number;
+  grade: string;
+  classAverage: string | null;
+  teacherRemark: string | null;
+}
+
+interface TermMetadata {
+  schoolDaysOpened: string | null;
+  attendance: string | null;
+  nextTermBegins: string | null;
+  overallRemark: string | null;
+  teacherComment: string | null;
+  principalComment: string | null;
+  totalScore: string | null;
+  averageScore: string | null;
+  overallGrade: string | null;
+}
+
+// --- Component ---
 
 export default function ResultPage() {
   return (
@@ -115,30 +147,16 @@ function ResultLoading() {
   );
 }
 
-interface StudentProfile {
-  id: string;
-  firstName: string;
-  middleName: string | null;
-  lastName: string;
-  admissionNumber: string;
-  class: string;
-  photoUrl: string | null;
-}
-
-interface ResultSummary {
-  totalScore: number;
-  averageScore: number;
-  subjectCount: number;
-}
-
 function ResultContent() {
   const searchParams = useSearchParams();
   const studentId = searchParams.get("studentId");
   const resultToken = searchParams.get("token");
+  const session = searchParams.get("session");
+  const term = searchParams.get("term");
 
   const [student, setStudent] = useState<StudentProfile | null>(null);
   const [results, setResults] = useState<ResultRecord[]>([]);
-  const [summary, setSummary] = useState<ResultSummary | null>(null);
+  const [termMeta, setTermMeta] = useState<TermMetadata | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -151,7 +169,11 @@ function ResultContent() {
 
     async function fetchResult() {
       try {
-        const res = await fetch(`/api/result?studentId=${encodeURIComponent(studentId!)}&token=${encodeURIComponent(resultToken!)}`);
+        let url = `/api/result?studentId=${encodeURIComponent(studentId!)}&token=${encodeURIComponent(resultToken!)}`;
+        if (session) url += `&session=${encodeURIComponent(session)}`;
+        if (term) url += `&term=${encodeURIComponent(term)}`;
+
+        const res = await fetch(url);
         const data = await res.json();
 
         if (!res.ok) {
@@ -162,7 +184,7 @@ function ResultContent() {
 
         setStudent(data.student);
         setResults(data.results);
-        setSummary(data.summary);
+        setTermMeta(data.termMetadata || null);
       } catch {
         setError("Something went wrong. Please try again.");
       } finally {
@@ -171,15 +193,11 @@ function ResultContent() {
     }
 
     fetchResult();
-  }, [studentId, resultToken]);
+  }, [studentId, resultToken, session, term]);
 
-  const handlePrint = () => {
-    window.print();
-  };
+  const handlePrint = () => window.print();
 
-  if (loading) {
-    return <ResultLoading />;
-  }
+  if (loading) return <ResultLoading />;
 
   if (error || !student) {
     return (
@@ -202,10 +220,15 @@ function ResultContent() {
     );
   }
 
+  const displaySession = session || schoolInfo.currentSession;
+  const displayTerm = term || schoolInfo.currentTerm;
+  const totalScore = termMeta?.totalScore ? Number(termMeta.totalScore) : null;
+  const averageScore = termMeta?.averageScore ? Number(termMeta.averageScore) : null;
+
   return (
     <div className="min-h-screen bg-slate-50/50 dark:bg-zinc-950 font-sans">
       {/* Header - Hidden on print */}
-      <motion.header 
+      <motion.header
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         className="sticky top-0 z-50 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border-b border-slate-200 dark:border-zinc-800 px-6 py-4 print:hidden"
@@ -217,7 +240,7 @@ function ResultContent() {
           </Link>
           <div className="flex items-center gap-3">
             <div className="bg-white rounded-full p-0.5 shadow-sm h-10 w-10 relative flex items-center justify-center overflow-hidden border border-slate-200">
-               <Image src="/goodnews-logo.png" alt="School Logo" fill sizes="40px" className="object-contain p-1" />
+              <Image src="/goodnews-logo.png" alt="School Logo" fill sizes="40px" className="object-contain p-1" />
             </div>
             <span className="font-bold text-lg text-slate-800 dark:text-slate-100 hidden sm:inline">{schoolInfo.name}</span>
           </div>
@@ -236,20 +259,13 @@ function ResultContent() {
 
       {/* Result Sheet */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
-        <motion.div
-           variants={containerVariants}
-           initial="hidden"
-           animate="visible"
-        >
+        <motion.div variants={containerVariants} initial="hidden" animate="visible">
           <Card className="shadow-xl dark:shadow-2xl border-0 overflow-hidden dark:bg-zinc-900">
             {/* School Header Banner */}
-            <motion.div 
+            <motion.div
               variants={itemVariants}
-              className="bg-gradient-to-r from-blue-600 to-blue-800 dark:from-blue-900 dark:to-slate-900 text-white p-8 sm:p-10 text-center relative overflow-hidden"
+              className="bg-gradient-to-r from-blue-600 to-blue-800 dark:from-blue-900 dark:to-slate-900 text-white p-8 sm:p-10 text-center relative overflow-hidden print:bg-blue-800 print:text-black"
             >
-              {/* Decorative background elements */}
-              <div className="absolute top-0 left-0 w-full h-full opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] animate-pulse-slow"></div>
-              
               <div className="relative z-10">
                 <div className="flex justify-center mb-4">
                   <div className="h-24 w-24 bg-white dark:bg-zinc-800 rounded-full flex items-center justify-center shadow-lg ring-4 ring-white/30 relative overflow-hidden">
@@ -260,14 +276,14 @@ function ResultContent() {
                 <p className="text-blue-100 text-sm sm:text-base font-medium opacity-90">{schoolInfo.address}</p>
                 <div className="mt-6 inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-6 py-2 rounded-full text-sm font-semibold border border-white/20 shadow-sm">
                   <IconCalendar className="h-4 w-4" />
-                  {schoolInfo.currentSession} &bull; {schoolInfo.currentTerm}
+                  {displaySession} &bull; {displayTerm}
                 </div>
               </div>
             </motion.div>
 
             <CardContent className="p-0 sm:p-8">
-              {/* Student Info Section */}
-              <motion.div 
+              {/* Student Info + Term Header Info */}
+              <motion.div
                 variants={itemVariants}
                 className="flex flex-col md:flex-row gap-8 p-6 mx-4 sm:mx-0 -mt-10 sm:mt-0 relative z-20 bg-white dark:bg-zinc-800 rounded-xl shadow-lg sm:shadow-none border sm:border-0 border-slate-100 dark:border-zinc-700"
               >
@@ -279,119 +295,133 @@ function ResultContent() {
                     </AvatarFallback>
                   </Avatar>
                 </div>
-                
                 <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 text-sm">
-                   {[
-                     { label: "Full Name", value: `${student.firstName}${student.middleName ? ` ${student.middleName}` : ''} ${student.lastName}`, icon: <IconUser className="h-4 w-4" /> },
-                     { label: "Admission No", value: student.admissionNumber, icon: <IconHash className="h-4 w-4" /> },
-                     { label: "Class", value: student.class, icon: <IconBookOpen className="h-4 w-4" /> },
-                     { label: "Session", value: schoolInfo.currentSession, icon: <IconCalendar className="h-4 w-4" /> },
-                     { label: "Term", value: schoolInfo.currentTerm, icon: <IconClock className="h-4 w-4" /> },
-                   ].map((item, i) => (
-                     <div key={i} className="flex flex-col gap-1 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-zinc-700/50 transition-colors">
-                       <p className="text-slate-500 dark:text-slate-400 flex items-center gap-2 text-xs uppercase tracking-wider font-semibold">
-                         {item.icon} {item.label}
-                       </p>
-                       <p className="font-bold text-slate-800 dark:text-slate-200 text-lg">{item.value}</p>
-                     </div>
-                   ))}
+                  {[
+                    { label: "Full Name", value: `${student.firstName}${student.middleName ? ` ${student.middleName}` : ""} ${student.lastName}`, icon: <IconUser className="h-4 w-4" /> },
+                    { label: "Admission No", value: student.admissionNumber, icon: <IconHash className="h-4 w-4" /> },
+                    { label: "Class", value: student.class, icon: <IconBookOpen className="h-4 w-4" /> },
+                    { label: "Session", value: displaySession, icon: <IconCalendar className="h-4 w-4" /> },
+                    { label: "Term", value: displayTerm, icon: <IconClock className="h-4 w-4" /> },
+                    ...(termMeta?.schoolDaysOpened ? [{ label: "School Days", value: termMeta.schoolDaysOpened, icon: <IconCalendar className="h-4 w-4" /> }] : []),
+                    ...(termMeta?.attendance ? [{ label: "Attendance", value: termMeta.attendance, icon: <IconClock className="h-4 w-4" /> }] : []),
+                    ...(termMeta?.nextTermBegins ? [{ label: "Next Term", value: termMeta.nextTermBegins, icon: <IconCalendar className="h-4 w-4" /> }] : []),
+                  ].map((item, i) => (
+                    <div key={i} className="flex flex-col gap-1 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-zinc-700/50 transition-colors">
+                      <p className="text-slate-500 dark:text-slate-400 flex items-center gap-2 text-xs uppercase tracking-wider font-semibold">
+                        {item.icon} {item.label}
+                      </p>
+                      <p className="font-bold text-slate-800 dark:text-slate-200 text-lg">{item.value}</p>
+                    </div>
+                  ))}
                 </div>
               </motion.div>
 
-              <div className="h-8"></div> {/* Spacer */}
+              <div className="h-8" />
 
-              {/* Results Section */}
+              {/* Results Table */}
               <motion.div variants={itemVariants} className="space-y-4 px-4 sm:px-0">
-                 <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-bold text-xl text-slate-800 dark:text-white flex items-center gap-2">
-                       <IconAward className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                       Academic Performance
-                    </h3>
-                    <Badge variant="secondary" className="hidden sm:flex">Total Subjects: {results.length}</Badge>
-                 </div>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-bold text-xl text-slate-800 dark:text-white flex items-center gap-2">
+                    <IconAward className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                    Academic Performance
+                  </h3>
+                  <Badge variant="secondary" className="hidden sm:flex">Total Subjects: {results.length}</Badge>
+                </div>
 
-                 {/* Desktop Table View */}
-                 <div className="hidden md:block rounded-xl border border-slate-200 dark:border-zinc-700 overflow-hidden shadow-sm">
-                   <Table>
-                     <TableHeader className="bg-slate-50 dark:bg-zinc-800/50">
-                       <TableRow className="border-b border-slate-200 dark:border-zinc-700">
-                         <TableHead className="font-bold text-slate-700 dark:text-slate-300">Subject</TableHead>
-                         <TableHead className="text-center font-bold text-slate-700 dark:text-slate-300">C.A (40)</TableHead>
-                         <TableHead className="text-center font-bold text-slate-700 dark:text-slate-300">Exam (60)</TableHead>
-                         <TableHead className="text-center font-bold text-slate-700 dark:text-slate-300">Total (100)</TableHead>
-                         <TableHead className="text-center font-bold text-slate-700 dark:text-slate-300">Grade</TableHead>
-                         <TableHead className="font-bold text-slate-700 dark:text-slate-300">Remark</TableHead>
-                       </TableRow>
-                     </TableHeader>
-                     <TableBody>
-                       {results.map((result, index) => (
-                         <TableRow key={index} className="hover:bg-slate-50/80 dark:hover:bg-zinc-800/50 transition-colors border-b border-slate-100 dark:border-zinc-800">
-                           <TableCell className="font-medium text-slate-900 dark:text-slate-100">{result.subject}</TableCell>
-                           <TableCell className="text-center text-slate-600 dark:text-slate-400">{result.ca}</TableCell>
-                           <TableCell className="text-center text-slate-600 dark:text-slate-400">{result.exam}</TableCell>
-                           <TableCell className="text-center font-bold text-slate-900 dark:text-white bg-slate-50/50 dark:bg-zinc-800/30">{result.total}</TableCell>
-                           <TableCell className="text-center">
-                             <Badge variant="outline" className={`${getGradeColor(result.grade)} font-bold px-3 py-0.5 shadow-sm`}>
-                               {result.grade}
-                             </Badge>
-                           </TableCell>
-                           <TableCell className="text-slate-600 dark:text-slate-400 text-sm font-medium">{result.remark}</TableCell>
-                         </TableRow>
-                       ))}
-                     </TableBody>
-                   </Table>
-                 </div>
+                {/* Desktop Table View */}
+                <div className="hidden md:block rounded-xl border border-slate-200 dark:border-zinc-700 overflow-hidden shadow-sm">
+                  <Table>
+                    <TableHeader className="bg-slate-50 dark:bg-zinc-800/50">
+                      <TableRow className="border-b border-slate-200 dark:border-zinc-700">
+                        <TableHead className="font-bold text-slate-700 dark:text-slate-300 sticky left-0 bg-slate-50 dark:bg-zinc-800/50 z-10">Subject</TableHead>
+                        <TableHead className="text-center font-bold text-slate-700 dark:text-slate-300">1st Ass (20)</TableHead>
+                        <TableHead className="text-center font-bold text-slate-700 dark:text-slate-300">2nd Ass (20)</TableHead>
+                        <TableHead className="text-center font-bold text-slate-700 dark:text-slate-300">Exam (60)</TableHead>
+                        <TableHead className="text-center font-bold text-slate-700 dark:text-slate-300">Total (100)</TableHead>
+                        <TableHead className="text-center font-bold text-slate-700 dark:text-slate-300">Grade</TableHead>
+                        <TableHead className="text-center font-bold text-slate-700 dark:text-slate-300">Class Avg</TableHead>
+                        <TableHead className="font-bold text-slate-700 dark:text-slate-300">Remark</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {results.map((result, index) => (
+                        <TableRow key={index} className="hover:bg-slate-50/80 dark:hover:bg-zinc-800/50 transition-colors border-b border-slate-100 dark:border-zinc-800">
+                          <TableCell className="font-medium text-slate-900 dark:text-slate-100 sticky left-0 bg-white dark:bg-zinc-900 z-10">{result.subject}</TableCell>
+                          <TableCell className="text-center text-slate-600 dark:text-slate-400">{result.firstAss}</TableCell>
+                          <TableCell className="text-center text-slate-600 dark:text-slate-400">{result.secondAss}</TableCell>
+                          <TableCell className="text-center text-slate-600 dark:text-slate-400">{result.exam}</TableCell>
+                          <TableCell className="text-center font-bold text-slate-900 dark:text-white bg-slate-50/50 dark:bg-zinc-800/30">{result.total}</TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant="outline" className={`${getGradeColor(result.grade)} font-bold px-3 py-0.5 shadow-sm`}>
+                              {result.grade}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-center text-slate-600 dark:text-slate-400">{result.classAverage ?? "—"}</TableCell>
+                          <TableCell className="text-slate-600 dark:text-slate-400 text-sm font-medium">{result.teacherRemark ?? "—"}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
 
-                 {/* Mobile Card View */}
-                 <div className="grid grid-cols-1 gap-4 md:hidden">
-                    {results.map((result, index) => (
-                      <motion.div 
-                        key={index}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.05 }}
-                      >
-                         <Card className="border border-slate-200 dark:border-zinc-800 shadow-sm hover:shadow-md transition-shadow dark:bg-zinc-900">
-                            <CardContent className="p-4">
-                               <div className="flex justify-between items-start mb-3">
-                                  <h4 className="font-bold text-slate-900 dark:text-white">{result.subject}</h4>
-                                  <Badge variant="outline" className={`${getGradeColor(result.grade)} font-bold`}>
-                                    {result.grade}
-                                  </Badge>
-                               </div>
-                               <div className="grid grid-cols-3 gap-2 text-center text-sm py-3 bg-slate-50 dark:bg-zinc-800/50 rounded-lg">
-                                  <div>
-                                    <span className="block text-xs text-slate-400 dark:text-slate-500 uppercase">C.A</span>
-                                    <span className="font-bold text-slate-700 dark:text-slate-300">{result.ca}</span>
-                                  </div>
-                                  <div>
-                                    <span className="block text-xs text-slate-400 dark:text-slate-500 uppercase">Exam</span>
-                                    <span className="font-bold text-slate-700 dark:text-slate-300">{result.exam}</span>
-                                  </div>
-                                  <div>
-                                    <span className="block text-xs text-slate-400 dark:text-slate-500 uppercase">Total</span>
-                                    <span className="font-bold text-blue-600 dark:text-blue-400">{result.total}</span>
-                                  </div>
-                               </div>
-                               <p className="mt-3 text-xs text-right text-slate-500 italic">"{result.remark}"</p>
-                            </CardContent>
-                         </Card>
-                      </motion.div>
-                    ))}
-                 </div>
+                {/* Mobile Card View */}
+                <div className="grid grid-cols-1 gap-4 md:hidden">
+                  {results.map((result, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                    >
+                      <Card className="border border-slate-200 dark:border-zinc-800 shadow-sm hover:shadow-md transition-shadow dark:bg-zinc-900">
+                        <CardContent className="p-4">
+                          <div className="flex justify-between items-start mb-3">
+                            <h4 className="font-bold text-slate-900 dark:text-white">{result.subject}</h4>
+                            <Badge variant="outline" className={`${getGradeColor(result.grade)} font-bold`}>
+                              {result.grade}
+                            </Badge>
+                          </div>
+                          <div className="grid grid-cols-4 gap-2 text-center text-sm py-3 bg-slate-50 dark:bg-zinc-800/50 rounded-lg">
+                            <div>
+                              <span className="block text-xs text-slate-400 dark:text-slate-500 uppercase">1st</span>
+                              <span className="font-bold text-slate-700 dark:text-slate-300">{result.firstAss}</span>
+                            </div>
+                            <div>
+                              <span className="block text-xs text-slate-400 dark:text-slate-500 uppercase">2nd</span>
+                              <span className="font-bold text-slate-700 dark:text-slate-300">{result.secondAss}</span>
+                            </div>
+                            <div>
+                              <span className="block text-xs text-slate-400 dark:text-slate-500 uppercase">Exam</span>
+                              <span className="font-bold text-slate-700 dark:text-slate-300">{result.exam}</span>
+                            </div>
+                            <div>
+                              <span className="block text-xs text-slate-400 dark:text-slate-500 uppercase">Total</span>
+                              <span className="font-bold text-blue-600 dark:text-blue-400">{result.total}</span>
+                            </div>
+                          </div>
+                          {(result.classAverage || result.teacherRemark) && (
+                            <div className="mt-3 flex justify-between items-center text-xs text-slate-500">
+                              {result.classAverage && <span>Class Avg: {result.classAverage}</span>}
+                              {result.teacherRemark && <span className="italic">&ldquo;{result.teacherRemark}&rdquo;</span>}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  ))}
+                </div>
               </motion.div>
 
-              <div className="h-8"></div> {/* Spacer */}
+              <div className="h-8" />
 
-              {/* Summary Section */}
+              {/* Summary + Comments Section */}
               <div className="grid md:grid-cols-2 gap-6 px-4 sm:px-0">
                 {/* Performance Stats */}
                 <motion.div variants={itemVariants}>
                   <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-600 to-blue-700 text-white overflow-hidden relative">
-                    {/* Abstract bg shapes */}
-                    <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full bg-white/10 blur-3xl"></div>
-                    <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-48 h-48 rounded-full bg-blue-400/20 blur-2xl"></div>
-                    
+                    <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full bg-white/10 blur-3xl" />
+                    <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-48 h-48 rounded-full bg-blue-400/20 blur-2xl" />
+
                     <CardHeader className="pb-2 relative z-10">
                       <CardTitle className="text-lg flex items-center gap-2 text-white/90">
                         <IconTrendingUp className="h-5 w-5" />
@@ -399,58 +429,92 @@ function ResultContent() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-5 relative z-10 pt-4">
-                      <div className="flex justify-between items-center text-white p-3 bg-white/10 rounded-lg backdrop-blur-sm border border-white/10">
-                        <span className="text-white/80 font-medium">Total Score</span>
-                        <div className="text-2xl font-bold flex items-end gap-1">
-                          <AnimatedNumber value={summary?.totalScore ?? 0} />
-                          <span className="text-sm font-normal text-white/60 mb-1">/ {(summary?.subjectCount ?? 0) * 100}</span>
+                      {totalScore !== null && (
+                        <div className="flex justify-between items-center text-white p-3 bg-white/10 rounded-lg backdrop-blur-sm border border-white/10">
+                          <span className="text-white/80 font-medium">Total Score</span>
+                          <div className="text-2xl font-bold flex items-end gap-1">
+                            <AnimatedNumber value={totalScore} />
+                            <span className="text-sm font-normal text-white/60 mb-1">/ {results.length * 100}</span>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex justify-between items-center text-white p-3 bg-white/10 rounded-lg backdrop-blur-sm border border-white/10">
-                        <span className="text-white/80 font-medium">Average Score</span>
-                        <div className="text-2xl font-bold flex items-end gap-1">
-                          <AnimatedNumber value={summary?.averageScore ?? 0} />
-                          <span className="text-sm font-normal text-white/60 mb-1">%</span>
+                      )}
+                      {averageScore !== null && (
+                        <div className="flex justify-between items-center text-white p-3 bg-white/10 rounded-lg backdrop-blur-sm border border-white/10">
+                          <span className="text-white/80 font-medium">Average Score</span>
+                          <div className="text-2xl font-bold flex items-end gap-1">
+                            <AnimatedNumber value={averageScore} />
+                            <span className="text-sm font-normal text-white/60 mb-1">%</span>
+                          </div>
                         </div>
-                      </div>
+                      )}
+                      {termMeta?.overallGrade && (
+                        <div className="flex justify-between items-center text-white p-3 bg-white/10 rounded-lg backdrop-blur-sm border border-white/10">
+                          <span className="text-white/80 font-medium">Overall Grade</span>
+                          <Badge className="bg-white text-blue-700 hover:bg-white/90 text-sm py-1 px-3">
+                            {termMeta.overallGrade}
+                          </Badge>
+                        </div>
+                      )}
                       <div className="flex justify-between items-center text-white p-3 bg-white/10 rounded-lg backdrop-blur-sm border border-white/10">
                         <span className="text-white/80 font-medium">Subjects Taken</span>
                         <Badge className="bg-white text-blue-700 hover:bg-white/90 text-sm py-1 px-3">
-                          {summary?.subjectCount ?? 0} subjects
+                          {results.length} subjects
                         </Badge>
                       </div>
                     </CardContent>
                   </Card>
                 </motion.div>
 
-                {/* Principal's Comment */}
+                {/* Comments Card */}
                 <motion.div variants={itemVariants}>
                   <Card className="h-full border border-green-200 dark:border-green-900 bg-green-50/50 dark:bg-green-950/20 shadow-md">
                     <CardHeader className="pb-2">
-                       <CardTitle className="text-lg text-green-800 dark:text-green-300 flex items-center gap-2">
-                          <IconUser className="h-5 w-5" />
-                          Principal's Remarks
-                       </CardTitle>
+                      <CardTitle className="text-lg text-green-800 dark:text-green-300 flex items-center gap-2">
+                        <IconUser className="h-5 w-5" />
+                        Comments &amp; Remarks
+                      </CardTitle>
                     </CardHeader>
-                    <CardContent className="flex flex-col h-[calc(100%-4rem)] justify-center">
-                      <blockquote className="text-slate-700 dark:text-slate-300 italic text-lg leading-relaxed border-l-4 border-green-300 dark:border-green-700 pl-4 py-2 my-auto">
-                        &ldquo;Keep up the great work!&rdquo;
-                      </blockquote>
-                      <div className="mt-6 flex items-center gap-4">
-                         <div className="h-10 w-10 rounded-full bg-green-200 dark:bg-green-800 flex items-center justify-center text-green-700 dark:text-green-300 font-serif font-bold italic">
-                            P
-                         </div>
-                         <div>
-                            <p className="font-bold text-slate-800 dark:text-white font-serif">The Principal</p>
-                            <p className="text-xs text-green-600 dark:text-green-400 uppercase tracking-widest font-semibold">Principal</p>
-                         </div>
-                      </div>
+                    <CardContent className="space-y-5">
+                      {termMeta?.overallRemark && (
+                        <div>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold mb-1">Overall Remark</p>
+                          <p className="text-slate-700 dark:text-slate-300 font-medium">{termMeta.overallRemark}</p>
+                        </div>
+                      )}
+                      {termMeta?.teacherComment && (
+                        <div>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold mb-1">Teacher&apos;s Comment</p>
+                          <blockquote className="text-slate-700 dark:text-slate-300 italic leading-relaxed border-l-4 border-green-300 dark:border-green-700 pl-4 py-2">
+                            &ldquo;{termMeta.teacherComment}&rdquo;
+                          </blockquote>
+                        </div>
+                      )}
+                      {termMeta?.principalComment && (
+                        <div>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold mb-1">Principal&apos;s Comment</p>
+                          <blockquote className="text-slate-700 dark:text-slate-300 italic leading-relaxed border-l-4 border-green-300 dark:border-green-700 pl-4 py-2">
+                            &ldquo;{termMeta.principalComment}&rdquo;
+                          </blockquote>
+                          <div className="mt-3 flex items-center gap-4">
+                            <div className="h-10 w-10 rounded-full bg-green-200 dark:bg-green-800 flex items-center justify-center text-green-700 dark:text-green-300 font-serif font-bold italic">
+                              P
+                            </div>
+                            <div>
+                              <p className="font-bold text-slate-800 dark:text-white font-serif">The Principal</p>
+                              <p className="text-xs text-green-600 dark:text-green-400 uppercase tracking-widest font-semibold">Principal</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      {!termMeta?.overallRemark && !termMeta?.teacherComment && !termMeta?.principalComment && (
+                        <p className="text-slate-400 dark:text-slate-500 italic py-4 text-center">No comments available for this term.</p>
+                      )}
                     </CardContent>
                   </Card>
                 </motion.div>
               </div>
 
-              {/* Grading Key - Collapsible on small screens? Keep simple for now */}
+              {/* Grading Key */}
               <motion.div variants={itemVariants} className="mt-8 p-4 bg-slate-100 dark:bg-zinc-800/80 rounded-lg border border-slate-200 dark:border-zinc-700 mx-4 sm:mx-0">
                 <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3">Grading System</h4>
                 <div className="flex flex-wrap gap-2 text-xs">
@@ -469,21 +533,31 @@ function ResultContent() {
                   ))}
                 </div>
               </motion.div>
-
             </CardContent>
           </Card>
 
-          {/* Footer Actions - Hidden on print */}
+          {/* Footer - Hidden on print */}
           <motion.div variants={itemVariants} className="mt-8 text-center print:hidden pb-8">
             <p className="text-sm text-slate-500 dark:text-slate-400">
               Having issues with your result? <a href={`mailto:${schoolInfo.contact.email}`} className="text-blue-600 dark:text-blue-400 hover:underline font-medium">Contact Support</a>
             </p>
             <p className="text-xs text-slate-400 dark:text-slate-600 mt-2">
-               Generated on {new Date().toLocaleDateString()}
+              Generated on {new Date().toLocaleDateString()}
             </p>
           </motion.div>
         </motion.div>
       </main>
+
+      {/* Print Styles */}
+      <style jsx global>{`
+        @media print {
+          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .print\\:hidden { display: none !important; }
+          main { padding: 0 !important; }
+          .shadow-xl, .shadow-lg, .shadow-md, .shadow-sm { box-shadow: none !important; }
+          .sticky { position: static !important; }
+        }
+      `}</style>
     </div>
   );
 }
