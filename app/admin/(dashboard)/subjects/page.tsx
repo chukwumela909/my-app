@@ -29,6 +29,13 @@ export default function SubjectsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", code: "" });
   const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
+
+  const filteredSubjects = subjects.filter(
+    (s) =>
+      s.name.toLowerCase().includes(search.toLowerCase()) ||
+      s.code.toLowerCase().includes(search.toLowerCase())
+  );
 
   const fetchSubjects = useCallback(async () => {
     try {
@@ -154,13 +161,22 @@ export default function SubjectsPage() {
         </Card>
       )}
 
+      <div className="flex items-center gap-2">
+        <Input
+          placeholder="Search subjects..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="max-w-sm"
+        />
+      </div>
+
       <Card className="border-slate-200 dark:border-zinc-800">
         <CardContent className="p-0">
           {loading ? (
             <div className="p-8 text-center text-slate-500">Loading...</div>
-          ) : subjects.length === 0 ? (
+          ) : filteredSubjects.length === 0 ? (
             <div className="p-8 text-center text-slate-500">
-              No subjects yet. Add one to get started.
+              {search ? "No subjects match your search." : "No subjects yet. Add one to get started."}
             </div>
           ) : (
             <Table>
@@ -172,7 +188,7 @@ export default function SubjectsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {subjects.map((subject) => (
+                {filteredSubjects.map((subject) => (
                   <TableRow key={subject.id}>
                     <TableCell className="font-medium">{subject.name}</TableCell>
                     <TableCell>
