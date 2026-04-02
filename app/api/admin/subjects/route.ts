@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let body: { name?: string; code?: string };
+  let body: { name?: string; code?: string; levels?: string[] };
   try {
     body = await request.json();
   } catch {
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("subjects")
-    .insert({ name: body.name, code: body.code })
+    .insert({ name: body.name, code: body.code, levels: body.levels ?? [] })
     .select()
     .single();
 
@@ -58,7 +58,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let body: { id?: string; name?: string; code?: string };
+  let body: { id?: string; name?: string; code?: string; levels?: string[] };
   try {
     body = await request.json();
   } catch {
@@ -70,9 +70,10 @@ export async function PUT(request: NextRequest) {
   }
 
   const supabase = createAdminClient();
-  const updates: Record<string, string> = {};
+  const updates: Record<string, string | string[]> = {};
   if (body.name) updates.name = body.name;
   if (body.code) updates.code = body.code;
+  if (body.levels !== undefined) updates.levels = body.levels;
 
   const { data, error } = await supabase
     .from("subjects")

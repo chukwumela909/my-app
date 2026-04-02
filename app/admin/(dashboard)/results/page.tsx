@@ -32,6 +32,7 @@ interface SubjectOption {
   id: string;
   name: string;
   code: string;
+  levels: string[];
 }
 
 interface ClassOption {
@@ -248,6 +249,7 @@ export default function ResultsPage() {
   const [bcDataLoaded, setBcDataLoaded] = useState(false);
   const [bcHasExisting, setBcHasExisting] = useState(false);
   const [bcDirty, setBcDirty] = useState(false);
+  const [bcShowAllSubjects, setBcShowAllSubjects] = useState(false);
 
   // Results table (filtered view)
   const [filteredResults, setFilteredResults] = useState<ResultRow[]>([]);
@@ -331,13 +333,30 @@ export default function ResultsPage() {
         existingMeta = data.metadata;
       }
 
-      // Build score rows: all subjects, pre-filled with existing data
+      // Build score rows: filter subjects by student's class level, fallback to all
       const existingBySubject = new Map<string, ResultRow>();
       existingResults.forEach((r) => {
         existingBySubject.set(r.subject_id, r);
       });
 
-      const rows: ScoreRow[] = subjects.map((subj) => {
+      // Determine the student's class level for filtering
+      const student = students.find((s) => s.id === bsStudentId);
+      const studentClass = student ? classes.find((c) => c.id === student.current_class_id) : null;
+      const studentLevel = studentClass?.level;
+
+      // Filter subjects by level (fallback to all if none assigned to this level)
+      const levelSubjects = studentLevel
+        ? subjects.filter((s) => (s.levels ?? []).includes(studentLevel))
+        : [];
+      const subjectsToUse = levelSubjects.length > 0 ? levelSubjects : subjects;
+
+      // Include any existing results for subjects not in the filtered list
+      const subjectIds = new Set(subjectsToUse.map((s) => s.id));
+      const extraSubjects = subjects.filter(
+        (s) => !subjectIds.has(s.id) && existingBySubject.has(s.id)
+      );
+
+      const rows: ScoreRow[] = [...subjectsToUse, ...extraSubjects].map((subj) => {
         const existing = existingBySubject.get(subj.id);
         return {
           subject_id: subj.id,
@@ -380,7 +399,7 @@ export default function ResultsPage() {
       setError("Failed to load data");
     }
     setBsLoading(false);
-  }, [bsStudentId, bsSession, bsTerm, subjects]);
+  }, [bsStudentId, bsSession, bsTerm, subjects, students, classes]);
 
   useEffect(() => {
     if (bsStudentId && bsSession && bsTerm && subjects.length > 0) {
@@ -704,6 +723,17 @@ export default function ResultsPage() {
   const bsFilteredStudents = bsClassFilter
     ? students.filter((s) => s.current_class_id === bsClassFilter)
     : students;
+
+  // --- Filtered subjects for By Class & Subject dropdown ---
+
+  const bcSelectedClass = classes.find((c) => c.id === bcClassId);
+  const bcSelectedLevel = bcSelectedClass?.level;
+  const bcLevelSubjects = bcSelectedLevel
+    ? subjects.filter((s) => (s.levels ?? []).includes(bcSelectedLevel))
+    : [];
+  const bcFilteredSubjects =
+    bcShowAllSubjects || bcLevelSubjects.length === 0 ? subjects : bcLevelSubjects;
+  const bcHasLevelFilter = bcLevelSubjects.length > 0 && !bcShowAllSubjects;
 
   // --- Select styling ---
   const selectClass = "w-full h-9 rounded-md border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 text-sm";
@@ -1120,8 +1150,10 @@ export default function ResultsPage() {
                     value={bcClassId}
                     onChange={(e) => {
                       setBcClassId(e.target.value);
+                      setBcSubjectId("");
                       setBcDataLoaded(false);
                       setBcRows([]);
+                      setBcShowAllSubjects(false);
                     }}
                     className={selectClass}
                   >
@@ -1132,7 +1164,23 @@ export default function ResultsPage() {
                   </select>
                 </div>
                 <div>
-                  <Label>Subject</Label>
+                  <div className="flex items-center justify-between">
+                    <Label>Subject</Label>
+                    {bcClassId && bcLevelSubjects.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBcShowAllSubjects(!bcShowAllSubjects);
+                          setBcSubjectId("");
+                          setBcDataLoaded(false);
+                          setBcRows([]);
+                        }}
+                        className="text-xs text-blue-600 hover:underline"
+                      >
+                        {bcShowAllSubjects ? "Show filtered" : "Show all"}
+                      </button>
+                    )}
+                  </div>
                   <select
                     value={bcSubjectId}
                     onChange={(e) => {
@@ -1142,8 +1190,12 @@ export default function ResultsPage() {
                     }}
                     className={selectClass}
                   >
-                    <option value="">Select subject...</option>
-                    {subjects.map((s) => (
+                    <option value="">
+                      {bcHasLevelFilter
+                        ? `Select subject (${bcFilteredSubjects.length} for ${bcSelectedLevel})...`
+                        : "Select subject..."}
+                    </option>
+                    {bcFilteredSubjects.map((s) => (
                       <option key={s.id} value={s.id}>{s.name} ({s.code})</option>
                     ))}
                   </select>
