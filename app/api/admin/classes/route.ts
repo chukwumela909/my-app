@@ -12,7 +12,7 @@ export async function GET() {
   const { data, error } = await supabase
     .from("classes")
     .select("*")
-    .order("name");
+    .order("sort_order", { ascending: true });
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -39,9 +39,20 @@ export async function POST(request: NextRequest) {
   }
 
   const supabase = createAdminClient();
+
+  // Assign sort_order as max + 1 so new classes go to the end
+  const { data: maxRow } = await supabase
+    .from("classes")
+    .select("sort_order")
+    .order("sort_order", { ascending: false })
+    .limit(1)
+    .single();
+
+  const nextOrder = (maxRow?.sort_order ?? 0) + 1;
+
   const { data, error } = await supabase
     .from("classes")
-    .insert({ name: body.name, level: body.level })
+    .insert({ name: body.name, level: body.level, sort_order: nextOrder })
     .select()
     .single();
 
@@ -86,6 +97,43 @@ export async function PUT(request: NextRequest) {
   }
 
   return NextResponse.json({ class: data });
+}
+
+export async function PATCH(request: NextRequest) {
+  const session = await getAdminSession();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  let body: { orderedIds?: string[] };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
+
+  if (!Array.isArray(body.orderedIds) || body.orderedIds.length === 0) {
+    return NextResponse.json({ error: "orderedIds array is required" }, { status: 400 });
+  }
+
+  const supabase = createAdminClient();
+
+  // Update each class's sort_order based on its position in the array
+  const updates = body.orderedIds.map((id, index) =>
+    supabase
+      .from("classes")
+      .update({ sort_order: index })
+      .eq("id", id)
+  );
+
+  const results = await Promise.all(updates);
+  const failed = results.find((r) => r.error);
+
+  if (failed?.error) {
+    return NextResponse.json({ error: failed.error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true });
 }
 
 export async function DELETE(request: NextRequest) {
