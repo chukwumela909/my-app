@@ -5,8 +5,8 @@ export const schoolInfo = {
   motto: "Bringing Sound Education in the fear of God to the Grassroots",
   address: "742 Evergreen Terrace, Springfield",
   logo: "/placeholder-logo.png", // We'll deal with images later or use text
-  currentSession: "2025/2026",
-  currentTerm: "First Term",
+  currentSession: "2026/2027",
+  currentTerm: "Second Term",
   contact: {
     email: "support@springfieldhigh.edu",
     phone: "+1 (555) 012-3456"
