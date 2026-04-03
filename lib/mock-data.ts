@@ -3,7 +3,7 @@
 export const schoolInfo = {
   name: "Goodnews International School",
   motto: "Bringing Sound Education in the fear of God to the Grassroots",
-  address: "742 Evergreen Terrace, Springfield",
+  address: "Uzoumashibuogu, Behind State Primary School, Umulu, Igbo Etche Rivers State",
   logo: "/placeholder-logo.png", // We'll deal with images later or use text
   currentSession: "2026/2027",
   currentTerm: "Second Term",
